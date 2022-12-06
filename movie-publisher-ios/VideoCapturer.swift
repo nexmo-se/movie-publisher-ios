@@ -8,8 +8,11 @@
 import OpenTok
 import AVFoundation
 
-protocol FrameCapturerMetadataDelegate {
-    func finishPreparingFrame(_ videoFrame: OTVideoFrame?)
+//protocol FrameCapturerMetadataDelegate {
+//    func finishPreparingFrame(_ videoFrame: OTVideoFrame?)
+//}
+protocol AudioTimeStampDelegate {
+    func valueChanged() -> CMTime
 }
 
 class VideoCapturer: NSObject, OTVideoCapture {
@@ -17,14 +20,19 @@ class VideoCapturer: NSObject, OTVideoCapture {
     var captureSession: AVCaptureSession?
     
     var videoCaptureConsumer: OTVideoCaptureConsumer?
-    var delegate: FrameCapturerMetadataDelegate?
+    var videoRender: OTVideoRender?
+
+//    var delegate: FrameCapturerMetadataDelegate?
+    var audioDelegate: AudioTimeStampDelegate?
+
     
     fileprivate let captureQueue = DispatchQueue(label: "ot-video-capture")
     fileprivate var videoInput: AVAsset
     fileprivate var videoOutput: AVAssetReaderOutput?
     fileprivate var capturing = false
-    fileprivate var videoFrame = OTVideoFrame(format: OTVideoFormat(argbWithWidth: 0, height: 0))
+    fileprivate var videoFrame = OTVideoFrame(format: OTVideoFormat(nv12WithWidth: 0, height: 0))
     fileprivate var lastTimeStamp: CMTime = CMTime()
+    var audioTimeStamp: CMTime = CMTime()
 
     
     init(video: AVAsset) {
@@ -61,7 +69,11 @@ class VideoCapturer: NSObject, OTVideoCapture {
           videoFormat.pixelFormat = .NV12
            return 0
       }
+    
+    func setAudioTimeStamp() {
+        audioTimeStamp = (self.audioDelegate?.valueChanged())!
 
+    }
 }
 
 extension VideoCapturer {
@@ -72,12 +84,8 @@ extension VideoCapturer {
             
         /* get video track(s) from video asset */
         let videoTrack = videoInput.tracks(withMediaType: .video)
-        let audioTrack = videoInput.tracks(withMediaType: .audio)
             
         let videoSize = videoTrack[0].naturalSize
-            
-            print("videosize width: " , videoSize.width)
-            print("videosize height: " , videoSize.height)
 
             let format = OTVideoFormat.init(nv12WithWidth: UInt32(videoSize.width), height: UInt32(videoSize.height))
             videoFrame.format = format
@@ -89,29 +97,24 @@ extension VideoCapturer {
             /* construct the actual track output and add it to the asset reader */
             let assetReaderVideoOutput = AVAssetReaderTrackOutput(track: videoTrack[0], outputSettings: videoSetting as? [String : Any]
             )
-            let assetReaderAudioOutput = AVAssetReaderTrackOutput(track: audioTrack[0], outputSettings: nil)
 
-            var i = 0
-            if (avAssetReader.canAdd(assetReaderVideoOutput) && avAssetReader.canAdd(assetReaderAudioOutput)) {
+            if (avAssetReader.canAdd(assetReaderVideoOutput)) {
                 avAssetReader.add(assetReaderVideoOutput)
-                avAssetReader.add(assetReaderAudioOutput)
-
-                print("video and audio asset added to output")
+                print("video asset added to output")
 
                 if (avAssetReader.startReading()) {
                     var buffer: CMSampleBuffer?
-//                    var audioBuffer: CMSampleBuffer
                     while (capturing && avAssetReader.status == AVAssetReader.Status.reading) {
                         let startTime = CACurrentMediaTime()
                         buffer = assetReaderVideoOutput.copyNextSampleBuffer()
+             
                         if (buffer == nil) {return}
-//                        audioBuffer = assetReaderAudioOutput.copyNextSampleBuffer()!
-                        i+=1
                         var timingInfo = CMSampleTimingInfo.invalid
                         CMSampleBufferGetSampleTimingInfo(buffer!,at: 0, timingInfoOut: &timingInfo)
                         let oldTS = lastTimeStamp
                         let currentTS = timingInfo.presentationTimeStamp
 
+                        var audioTime =  Double(audioTimeStamp.value) / Double(audioTimeStamp.timescale)
 
                         let previousTime = Double(oldTS.value) / Double(oldTS.timescale)
                         let currentTime = Double(currentTS.value) / Double(currentTS.timescale)
@@ -119,11 +122,18 @@ extension VideoCapturer {
                         lastTimeStamp = timingInfo.presentationTimeStamp
 
                         sendSampleBuffer(buffer:buffer!, timeStamp: timingInfo.presentationTimeStamp)
-
+                                                
+                        while (currentTime > audioTime) {
+                            audioTime =  Double(audioTimeStamp.value) / Double(audioTimeStamp.timescale)
+                            if (currentTime == 0) { break; }
+                            if (abs(currentTime - CMTimeGetSeconds(videoInput.duration)) < 1) {break;}
+                        }
+                        
                         let finishTime = CACurrentMediaTime();
                         let decodeTime = finishTime - startTime;
                         let sleepTime = currentTime - previousTime - decodeTime
-                        Thread.sleep(forTimeInterval: sleepTime)
+
+                        Thread.sleep(forTimeInterval: sleepTime - 0.02)
 
                     }
                 }
@@ -159,7 +169,7 @@ extension VideoCapturer {
         videoFrame.orientation = .up
         videoFrame.timestamp = timeStamp
         videoCaptureConsumer?.consumeFrame(videoFrame)
-
+//        videoRender?.renderVideoFrame(videoFrame)
         CVPixelBufferUnlockBaseAddress(imageBuffer!, CVPixelBufferLockFlags(rawValue: CVOptionFlags(0)));
 
     }

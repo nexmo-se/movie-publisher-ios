@@ -9,11 +9,11 @@ import UIKit
 import OpenTok
 
 // Replace with your OpenTok API key
-let kApiKey = "47565621"
+let kApiKey = ""
 // Replace with your generated session ID
-let kSessionId = "1_MX40NzU2NTYyMX5-MTY2OTYyNDQ1MTkyMH5XdllCaFIvdjc4T0x6TTE5b0RJd2JERTV-fg"
+let kSessionId = ""
 // Replace with your generated token
-let kToken = "T1==cGFydG5lcl9pZD00NzU2NTYyMSZzaWc9NDQxMjE5NjFiNTIzMDI3MjFjNGIyY2RhZDZlM2YxN2U0MjExMmQ5YTpzZXNzaW9uX2lkPTFfTVg0ME56VTJOVFl5TVg1LU1UWTJPVFl5TkRRMU1Ua3lNSDVYZGxsQ2FGSXZkamM0VDB4NlRURTViMFJKZDJKRVJUVi1mZyZjcmVhdGVfdGltZT0xNjY5NjI0NDkwJm5vbmNlPTAuMTI4MzAwMTUyODMxMTAyMyZyb2xlPXB1Ymxpc2hlciZleHBpcmVfdGltZT0xNjcwMjI5Mjg5JmluaXRpYWxfbGF5b3V0X2NsYXNzX2xpc3Q9"
+let kToken = ""
 
 
 let kWidgetHeight = 240
@@ -32,10 +32,23 @@ class ViewController: UIViewController {
     var capturer: VideoCapturer?
     var videoLoaded: AVAsset?
     
-    
     override func viewDidLoad() {
         super.viewDidLoad()
-        videoLoaded = loadVideoFromDocumentDirectory(fileName: "vonage-video")
+        videoLoaded = loadVideoFromDocumentDirectory(fileName: "videoplayback")
+
+        
+        let settings = OTPublisherSettings()
+        settings.name = UIDevice.current.name
+        publisher = OTPublisher(delegate: self, settings: settings)
+        publisher?.audioFallbackEnabled = false
+
+        capturer = VideoCapturer(video: videoLoaded!)
+        
+        let customAudioDevice = CustomAudioDevice(video: videoLoaded!, videoCapturer: capturer!)
+        OTAudioDeviceManager.setAudioDevice(customAudioDevice)
+        
+        publisher?.videoCapture = capturer
+        
         doConnect()
     }
     
@@ -61,15 +74,12 @@ class ViewController: UIViewController {
         defer {
             process(error: error)
         }
-        let settings = OTPublisherSettings()
-        settings.name = UIDevice.current.name
-        publisher = OTPublisher(delegate: self, settings: settings)
-        publisher?.audioFallbackEnabled = false
-
-        capturer = VideoCapturer(video: videoLoaded!)
-        publisher?.videoCapture = capturer
 
         session.publish(publisher!, error: &error)
+//        if let pubView = publisher!.view {
+//               pubView.frame = CGRect(x: 0, y: 0, width: kWidgetWidth, height: kWidgetHeight)
+//               view.addSubview(pubView)
+//           }
     }
     
     fileprivate func doSubscribe(_ stream: OTStream) {
