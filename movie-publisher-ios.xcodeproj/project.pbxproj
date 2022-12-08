@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		EA503FCD29399EDD0011CE66 /* sample_video.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = EA503FCC29399ED90011CE66 /* sample_video.mp4 */; };
 		EA503FCF2939A6310011CE66 /* videoplayback.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = EA503FCE2939A6250011CE66 /* videoplayback.mp4 */; };
-		EA75E0A02935A2FF00F8F9E9 /* CustomAudioDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA75E09F2935A2FF00F8F9E9 /* CustomAudioDevice.swift */; };
 		EA799C1F292F4C750064465A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA799C1E292F4C750064465A /* AppDelegate.swift */; };
 		EA799C21292F4C750064465A /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA799C20292F4C750064465A /* SceneDelegate.swift */; };
 		EA799C23292F4C750064465A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA799C22292F4C750064465A /* ViewController.swift */; };
@@ -17,6 +16,7 @@
 		EA799C28292F4C780064465A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EA799C27292F4C780064465A /* Assets.xcassets */; };
 		EA799C2B292F4C780064465A /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EA799C29292F4C780064465A /* LaunchScreen.storyboard */; };
 		EA799C34292F514B0064465A /* VideoCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA799C33292F514B0064465A /* VideoCapturer.swift */; };
+		EAAF40AE2941E91900FADFCD /* CustomAudioDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAAF40AD2941E91900FADFCD /* CustomAudioDevice.swift */; };
 		EED3CC51FC8111EDDB8A47C2 /* libPods-movie-publisher-ios.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 26129BF2E1BC5C313EEAEDA5 /* libPods-movie-publisher-ios.a */; };
 /* End PBXBuildFile section */
 
@@ -26,7 +26,6 @@
 		72E01649A89143281EF234FA /* Pods-movie-publisher-ios.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-movie-publisher-ios.release.xcconfig"; path = "Target Support Files/Pods-movie-publisher-ios/Pods-movie-publisher-ios.release.xcconfig"; sourceTree = "<group>"; };
 		EA503FCC29399ED90011CE66 /* sample_video.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = sample_video.mp4; sourceTree = "<group>"; };
 		EA503FCE2939A6250011CE66 /* videoplayback.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = videoplayback.mp4; sourceTree = "<group>"; };
-		EA75E09F2935A2FF00F8F9E9 /* CustomAudioDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomAudioDevice.swift; sourceTree = "<group>"; };
 		EA799C1B292F4C750064465A /* movie-publisher-ios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "movie-publisher-ios.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		EA799C1E292F4C750064465A /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		EA799C20292F4C750064465A /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -36,6 +35,7 @@
 		EA799C2A292F4C780064465A /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		EA799C2C292F4C780064465A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EA799C33292F514B0064465A /* VideoCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCapturer.swift; sourceTree = "<group>"; };
+		EAAF40AD2941E91900FADFCD /* CustomAudioDevice.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CustomAudioDevice.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,7 +98,7 @@
 				EA799C29292F4C780064465A /* LaunchScreen.storyboard */,
 				EA799C2C292F4C780064465A /* Info.plist */,
 				EA799C33292F514B0064465A /* VideoCapturer.swift */,
-				EA75E09F2935A2FF00F8F9E9 /* CustomAudioDevice.swift */,
+				EAAF40AD2941E91900FADFCD /* CustomAudioDevice.swift */,
 			);
 			path = "movie-publisher-ios";
 			sourceTree = "<group>";
@@ -205,7 +205,7 @@
 				EA799C23292F4C750064465A /* ViewController.swift in Sources */,
 				EA799C1F292F4C750064465A /* AppDelegate.swift in Sources */,
 				EA799C21292F4C750064465A /* SceneDelegate.swift in Sources */,
-				EA75E0A02935A2FF00F8F9E9 /* CustomAudioDevice.swift in Sources */,
+				EAAF40AE2941E91900FADFCD /* CustomAudioDevice.swift in Sources */,
 				EA799C34292F514B0064465A /* VideoCapturer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
