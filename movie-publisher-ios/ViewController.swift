@@ -16,11 +16,12 @@ let kSessionId = ""
 let kToken = ""
 
 
-let kWidgetHeight = 240
-let kWidgetWidth = 320
+let kWidgetHeight: CGFloat = 240
+let kWidgetWidth: CGFloat = 320
 let screenSize: CGRect = UIScreen.main.bounds;
 let screenWidth = screenSize.width;
 let screenHeight = screenSize.height;
+let videoPublisherName = "videoPublisher"
 
 class ViewController: UIViewController {
     lazy var session: OTSession = {
@@ -38,7 +39,7 @@ class ViewController: UIViewController {
 
         
         let settings = OTPublisherSettings()
-        settings.name = UIDevice.current.name
+        settings.name = videoPublisherName
         publisher = OTPublisher(delegate: self, settings: settings)
         publisher?.audioFallbackEnabled = false
 
@@ -92,6 +93,7 @@ class ViewController: UIViewController {
         session.subscribe(subscriber!, error: &error)
     }
     
+    
     fileprivate func process(error err: OTError?) {
         if let e = err {
             showAlert(errorStr: e.localizedDescription)
@@ -144,6 +146,8 @@ extension ViewController: OTSessionDelegate {
 // MARK: - OTPublisher delegate callbacks
 extension ViewController: OTPublisherDelegate {
     func publisher(_ publisher: OTPublisherKit, streamCreated stream: OTStream) {
+        // Subscribe to own stream
+        doSubscribe(stream)
     }
     
     func publisher(_ publisher: OTPublisherKit, streamDestroyed stream: OTStream) {
@@ -157,11 +161,27 @@ extension ViewController: OTPublisherDelegate {
 // MARK: - OTSubscriber delegate callbacks
 extension ViewController: OTSubscriberDelegate {
     func subscriberDidConnect(toStream subscriberKit: OTSubscriberKit) {
+        var width = screenWidth
+        var height = screenHeight
+        var x:CGFloat = 0
+        var y:CGFloat = 0
+        var bringToFront = false
+        if (subscriber?.stream?.name == videoPublisherName) {
+            width = kWidgetWidth
+            height = kWidgetHeight
+            x = screenWidth - kWidgetWidth - 12
+            y = screenHeight - kWidgetHeight - 12
+            bringToFront = true
+        }
         if let subsView = subscriber?.view {
-            subsView.frame = CGRect(x: 0, y: 0, width: screenWidth, height: screenHeight)
+            subsView.frame = CGRect(x: x, y: y, width: width, height: height)
             view.addSubview(subsView)
             view.sendSubviewToBack(subsView);
+            if (bringToFront) {
+                view.bringSubviewToFront(subsView)
+            }
         }
+
     }
 
     func subscriber(_ subscriber: OTSubscriberKit, didFailWithError error: OTError) {

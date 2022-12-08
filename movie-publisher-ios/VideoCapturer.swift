@@ -79,9 +79,12 @@ class VideoCapturer: NSObject, OTVideoCapture {
 extension VideoCapturer {
     private func setupCaptureSession() {
         do {
+        /* Wait Audio to load first */
+        Thread.sleep(forTimeInterval: 5)
+            
         /* allocate assetReader */
         let avAssetReader = try AVAssetReader(asset: videoInput)
-            
+
         /* get video track(s) from video asset */
         let videoTrack = videoInput.tracks(withMediaType: .video)
             
@@ -133,7 +136,7 @@ extension VideoCapturer {
                         let decodeTime = finishTime - startTime;
                         let sleepTime = currentTime - previousTime - decodeTime
 
-                        Thread.sleep(forTimeInterval: sleepTime - 0.02)
+                        Thread.sleep(forTimeInterval: sleepTime - 0.025)
 
                     }
                 }
