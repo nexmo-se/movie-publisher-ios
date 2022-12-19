@@ -2,5 +2,5 @@
 platform :ios, '12.0'
 
 target 'movie-publisher-ios' do
-  pod 'OpenTok', '2.24.0' 
+  pod 'OpenTok', '2.24.0'
 end

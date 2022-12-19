@@ -56,6 +56,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     var restartRetryCount = 0
     fileprivate var recordingVoiceUnit: AudioUnit?
     fileprivate var playoutVoiceUnit: AudioUnit?
+    var fileAudioBuffer = [Float]()
     
     fileprivate var previousAVAudioSessionCategory: AVAudioSession.Category?
     fileprivate var avAudioSessionMode: AVAudioSession.Mode?
@@ -71,8 +72,6 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     var videoPlayer: VideoCapturer?
     var lastTimeStamp: CMTime = CMTime()  // Todo: change to 0
     let audioCaptureQueue = DispatchQueue(label: "file-audio-driver")
-
-
     
     deinit {
         tearDownAudio()
@@ -215,7 +214,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     
     fileprivate func setupPlayoutCallback() {
         let selfPointer = Unmanaged.passUnretained(self).toOpaque()
-        var renderCallback = AURenderCallbackStruct(inputProc: renderCb1, inputProcRefCon: selfPointer)
+        var renderCallback = AURenderCallbackStruct(inputProc: renderCb, inputProcRefCon: selfPointer)
         AudioUnitSetProperty(playoutVoiceUnit!,
                              kAudioUnitProperty_SetRenderCallback,
                              kAudioUnitScope_Input,
@@ -227,7 +226,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     
     fileprivate func setupRecordingCallback() {
         let selfPointer = Unmanaged.passUnretained(self).toOpaque()
-        var inputCallback = AURenderCallbackStruct(inputProc: recordCb1, inputProcRefCon: selfPointer)
+        var inputCallback = AURenderCallbackStruct(inputProc: recordCb, inputProcRefCon: selfPointer)
         AudioUnitSetProperty(recordingVoiceUnit!,
                              kAudioOutputUnitProperty_SetInputCallback,
                              kAudioUnitScope_Global,
@@ -299,14 +298,17 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
                 AVNumberOfChannelsKey:1,
                 AVLinearPCMIsBigEndianKey: 0,
                 AVLinearPCMIsFloatKey: 0,
-                AVLinearPCMBitDepthKey: 16
+                AVLinearPCMBitDepthKey: 16,
+                AVLinearPCMIsNonInterleaved: 0
             ]
 
             let trackOutput = AVAssetReaderTrackOutput(track: track!, outputSettings: audioSettings as! [String : Int])
               assetReader.add(trackOutput)
               assetReader.startReading()
-          var sampleData = NSMutableData()
-
+            // var sampleData = NSMutableData()
+            
+            // Init circular buffer
+            
               while assetReader.status == AVAssetReader.Status.reading {
                 if let sampleBufferRef = trackOutput.copyNextSampleBuffer() {
                   if let blockBufferRef = CMSampleBufferGetDataBuffer(sampleBufferRef) {
@@ -324,34 +326,33 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
 
                     let bufferLength = CMBlockBufferGetDataLength(blockBufferRef)
                     let data:[Int32] = Array(repeating: 0, count: bufferLength)
-                    let samples = UnsafeMutablePointer<Int32>(mutating: data)
+                    let samples = UnsafeMutableRawPointer(mutating: data)
+                     
+                    CMBlockBufferCopyDataBytes(blockBufferRef, atOffset: 0, dataLength: bufferLength, destination: samples)
 
-//                      sampleData.append(bufferList!.pointee.mBuffers.mData!, length: Int(bufferSize))
-
-//                      let dataStart = UnsafeMutableRawPointer(mutating: sampleData.bytes)
-
-                      CMBlockBufferCopyDataBytes(blockBufferRef, atOffset: 0, dataLength: bufferLength, destination: samples)
-
-
-                       sampleData.append(samples, length: bufferLength)
+//                   sampleData.append(samples, length: bufferLength)
 
                      let numberOfSamples = CMSampleBufferGetNumSamples(sampleBufferRef)
+                                              
+//                    deviceAudioBus!.writeCaptureData(samples, numberOfSamples: UInt32(numberOfSamples))
 
-
-//                    let pointer: UnsafePointer<UInt32> = sampleData.bytes.assumingMemoryBound(to: UInt32.self)
-
-                    deviceAudioBus!.writeCaptureData(samples, numberOfSamples: UInt32(numberOfSamples))
-//                        deviceAudioBus!.writeCaptureData((bufferList?.pointee.mBuffers.mData)!, numberOfSamples: bufferNumFrames)
-//                      let _ = deviceAudioBus!.readRenderData(samples, numberOfSamples: UInt32(numberOfSamples))
-//                      CMSampleBufferInvalidate(sampleBufferRef)
-
-                    Thread.sleep(forTimeInterval: currentTime -  previousTime) // -0.005
+                      CMSampleBufferInvalidate(sampleBufferRef)
+                      // TODO: use circular buffer
+                      while (fileAudioBuffer.count > numberOfSamples*2) {}
+                      fileAudioBuffer = fileAudioBuffer + samples.toArray(to: Float.self, capacity: numberOfSamples)
+                      Thread.sleep(forTimeInterval: currentTime -  previousTime) // -0.005
                   }
                 }
               }
           }catch{
               fatalError("Unable to read Asset: \(error) : \(#function).")
           }
+    }
+}
+
+extension UnsafeMutableRawPointer {
+    func toArray<T>(to type: T.Type, capacity count: Int) -> [T] {
+        return Array(UnsafeBufferPointer(start: bindMemory(to: type, capacity: count), count: count))
     }
 }
 
@@ -456,12 +457,12 @@ extension CustomAudioDevice: OTAudioDevice {
         }
         if recordingVoiceUnit == nil {
             recording = setupAudioUnit(withPlayout: false)
-            
+
             if !recording {
                 return false
             }
         }
-        
+
         let result = AudioOutputUnitStart(recordingVoiceUnit!)
         if result != noErr {
             recording = false
@@ -653,7 +654,7 @@ extension CustomAudioDevice {
 }
 
 // MARK: - Render and Record C Callbacks
-func renderCb1(inRefCon:UnsafeMutableRawPointer,
+func renderCb(inRefCon:UnsafeMutableRawPointer,
               ioActionFlags:UnsafeMutablePointer<AudioUnitRenderActionFlags>,
               inTimeStamp:UnsafePointer<AudioTimeStamp>,
               inBusNumber:UInt32,
@@ -669,7 +670,7 @@ func renderCb1(inRefCon:UnsafeMutableRawPointer,
     return noErr
 }
 
-func recordCb1(inRefCon:UnsafeMutableRawPointer,
+func recordCb(inRefCon:UnsafeMutableRawPointer,
               ioActionFlags:UnsafeMutablePointer<AudioUnitRenderActionFlags>,
               inTimeStamp:UnsafePointer<AudioTimeStamp>,
               inBusNumber:UInt32,
@@ -702,7 +703,19 @@ func recordCb1(inRefCon:UnsafeMutableRawPointer,
                     audioDevice.bufferList!)
     
     if audioDevice.recording {
-//        audioDevice.deviceAudioBus!.writeCaptureData((audioDevice.bufferList?.pointee.mBuffers.mData)!, numberOfSamples: inNumberFrames)
+        print("file count: ", audioDevice.fileAudioBuffer.count)
+        if (audioDevice.fileAudioBuffer.count > 0) {
+            let numberOfFrameToExtract = audioDevice.fileAudioBuffer.count > inNumberFrames ? Int(inNumberFrames) : audioDevice.fileAudioBuffer.count
+            // Get number of bytes from file audio based on microphone reading bytes
+            let fileBuffer = Array(audioDevice.fileAudioBuffer.prefix(Int(numberOfFrameToExtract)))
+            let micBuffer =  (audioDevice.bufferList?.pointee.mBuffers.mData?.toArray(to: Float.self, capacity: Int(inNumberFrames)))!
+
+            let audioPointer = UnsafeMutableRawPointer(mutating: fileBuffer)
+            // OT Capture
+            audioDevice.deviceAudioBus!.writeCaptureData(audioPointer, numberOfSamples: UInt32(numberOfFrameToExtract))
+            // Remove captured bytes
+            audioDevice.fileAudioBuffer.removeFirst(Int(numberOfFrameToExtract))
+        }
     }
     
     if audioDevice.bufferSize != audioDevice.bufferList?.pointee.mBuffers.mDataByteSize {
@@ -751,7 +764,6 @@ func updateRecordingDelay(withAudioDevice audioDevice: CustomAudioDevice) {
         audioDevice.recordingDelay += UInt32(audioDevice.recordingAudioUnitPropertyLatency * CustomAudioDevice.kToMicroSecond)
         
         audioDevice.recordingDelay = audioDevice.recordingDelay.advanced(by: -500) / 1000
-        
         audioDevice.recordingDelayMeasurementCounter = 0
     }
 }
