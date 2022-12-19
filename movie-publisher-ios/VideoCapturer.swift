@@ -172,7 +172,6 @@ extension VideoCapturer {
         videoFrame.orientation = .up
         videoFrame.timestamp = timeStamp
         videoCaptureConsumer?.consumeFrame(videoFrame)
-//        videoRender?.renderVideoFrame(videoFrame)
         CVPixelBufferUnlockBaseAddress(imageBuffer!, CVPixelBufferLockFlags(rawValue: CVOptionFlags(0)));
 
     }
