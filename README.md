@@ -2,6 +2,10 @@
 
 This projects lets you publish an mp4 file in to a Vonage video session. User can also speak while the video is being played
 
+1. Run "pod install" to install opentok dependencies
+2. Edit ViewController.swift and add the kToken, kSessionId id and kApiKey
+3. Run the app and join from Vonage Video playground to see the published stream.
+
 ## How it works
 
 ### VideoCapturer
