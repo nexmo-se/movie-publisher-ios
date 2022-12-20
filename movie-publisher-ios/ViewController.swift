@@ -35,7 +35,7 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        videoLoaded = loadVideoFromDocumentDirectory(fileName: "sample_video")
+        videoLoaded = loadVideoFromDocumentDirectory(fileName: "vonage_roadshow")
 
         let settings = OTPublisherSettings()
         settings.name = videoPublisherName

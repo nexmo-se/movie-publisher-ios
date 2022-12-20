@@ -732,6 +732,9 @@ func recordCb(inRefCon:UnsafeMutableRawPointer,
             // Remove captured bytes
             audioDevice.isFileAudioLocked = false
         }
+        else {
+            audioDevice.deviceAudioBus!.writeCaptureData((audioDevice.bufferList?.pointee.mBuffers.mData)!, numberOfSamples: inNumberFrames)
+        }
     }
     
     if audioDevice.bufferSize != audioDevice.bufferList?.pointee.mBuffers.mDataByteSize {
