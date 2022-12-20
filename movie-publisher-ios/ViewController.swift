@@ -35,9 +35,8 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        videoLoaded = loadVideoFromDocumentDirectory(fileName: "videoplayback")
+        videoLoaded = loadVideoFromDocumentDirectory(fileName: "sample_video")
 
-        
         let settings = OTPublisherSettings()
         settings.name = videoPublisherName
         publisher = OTPublisher(delegate: self, settings: settings)
@@ -53,10 +52,6 @@ class ViewController: UIViewController {
         doConnect()
     }
     
-    /**
-     * Asynchronously begins the session connect process. Some time later, we will
-     * expect a delegate method to call us back with the results of this action.
-     */
     private func doConnect() {
         var error: OTError?
         defer {
@@ -65,11 +60,6 @@ class ViewController: UIViewController {
         session.connect(withToken: kToken, error: &error)
     }
     
-    /**
-     * Sets up an instance of OTPublisher to use with this session. OTPubilsher
-     * binds to the device camera and microphone, and will provide A/V streams
-     * to the OpenTok session.
-     */
     fileprivate func doPublish() {
         var error: OTError? = nil
         defer {
@@ -77,23 +67,15 @@ class ViewController: UIViewController {
         }
 
         session.publish(publisher!, error: &error)
-//        if let pubView = publisher!.view {
-//               pubView.frame = CGRect(x: 0, y: 0, width: kWidgetWidth, height: kWidgetHeight)
-//               view.addSubview(pubView)
-//           }
     }
-    
     fileprivate func doSubscribe(_ stream: OTStream) {
         var error: OTError?
         defer {
             process(error: error)
         }
         subscriber = OTSubscriber(stream: stream, delegate: self)
-        
         session.subscribe(subscriber!, error: &error)
     }
-    
-    
     fileprivate func process(error err: OTError?) {
         if let e = err {
             showAlert(errorStr: e.localizedDescription)
@@ -146,7 +128,7 @@ extension ViewController: OTSessionDelegate {
 // MARK: - OTPublisher delegate callbacks
 extension ViewController: OTPublisherDelegate {
     func publisher(_ publisher: OTPublisherKit, streamCreated stream: OTStream) {
-        // Subscribe to own stream
+        // Subscribe own video for mirroring
         doSubscribe(stream)
     }
     
@@ -167,6 +149,7 @@ extension ViewController: OTSubscriberDelegate {
         var y:CGFloat = 0
         var bringToFront = false
         if (subscriber?.stream?.name == videoPublisherName) {
+            subscriber?.audioVolume = 0
             width = kWidgetWidth
             height = kWidgetHeight
             x = screenWidth - kWidgetWidth - 12

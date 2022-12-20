@@ -22,7 +22,6 @@ class VideoCapturer: NSObject, OTVideoCapture {
     var videoCaptureConsumer: OTVideoCaptureConsumer?
     var videoRender: OTVideoRender?
 
-//    var delegate: FrameCapturerMetadataDelegate?
     var audioDelegate: AudioTimeStampDelegate?
 
     
@@ -39,7 +38,6 @@ class VideoCapturer: NSObject, OTVideoCapture {
         videoInput = video
     }
 
-    
     func initCapture() {
       }
       
