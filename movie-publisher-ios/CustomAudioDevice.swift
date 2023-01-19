@@ -307,7 +307,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
               assetReader.add(trackOutput)
               assetReader.startReading()
             // var sampleData = NSMutableData()
-                    
+
               while assetReader.status == AVAssetReader.Status.reading {
                 if let sampleBufferRef = trackOutput.copyNextSampleBuffer() {
                   if let blockBufferRef = CMSampleBufferGetDataBuffer(sampleBufferRef) {
@@ -326,20 +326,23 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
                     let bufferLength = CMBlockBufferGetDataLength(blockBufferRef)
                     let data:[Int32] = Array(repeating: 0, count: bufferLength)
                     let samples = UnsafeMutableRawPointer(mutating: data)
-                     
+
                     CMBlockBufferCopyDataBytes(blockBufferRef, atOffset: 0, dataLength: bufferLength, destination: samples)
 
-//                   sampleData.append(samples, length: bufferLength)
+//                  sampleData.append(samples, length: bufferLength)
 
-                     let numberOfSamples = CMSampleBufferGetNumSamples(sampleBufferRef)
-                                              
-//                    deviceAudioBus!.writeCaptureData(samples, numberOfSamples: UInt32(numberOfSamples))
-                      CMSampleBufferInvalidate(sampleBufferRef)
-                      
-                      while (fileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer || isFileAudioLocked) {}
+                    let numberOfSamples = CMSampleBufferGetNumSamples(sampleBufferRef)
+
+//                  deviceAudioBus!.writeCaptureData(samples, numberOfSamples: UInt32(numberOfSamples))
+                    CMSampleBufferInvalidate(sampleBufferRef)
+
+                      while (isFileAudioLocked || fileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer) {}
+
+                      isFileAudioLocked = true
                       fileAudioBuffer = fileAudioBuffer + samples.toArray(to: Int16.self, capacity: numberOfSamples)
+                      isFileAudioLocked = false
 
-                      Thread.sleep(forTimeInterval: currentTime -  previousTime)
+                      Thread.sleep(forTimeInterval: currentTime - previousTime - 0.005) // read slightly faster
                   }
                 }
               }
@@ -703,6 +706,7 @@ func recordCb(inRefCon:UnsafeMutableRawPointer,
     
     if audioDevice.recording {
         if (audioDevice.fileAudioBuffer.count > 0) {
+            while (audioDevice.isFileAudioLocked) {}
             audioDevice.isFileAudioLocked = true
 
             let numberOfFrameToExtract = audioDevice.fileAudioBuffer.count > inNumberFrames ? Int(inNumberFrames) : audioDevice.fileAudioBuffer.count

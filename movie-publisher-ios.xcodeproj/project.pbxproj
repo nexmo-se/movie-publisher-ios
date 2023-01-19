@@ -358,8 +358,8 @@
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "movie-publisher-ios/Info.plist";
-				INFOPLIST_KEY_NSCameraUsageDescription = "$(PRODUCT_NAME) uses the camera.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "$(PRODUCT_NAME) uses the microphone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "movie-publisher-ios uses the camera.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "movie-publisher-ios uses the microphone.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -370,7 +370,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.vonage.movie-publisher-ios-ij";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.vonage.movie-publisher-ios-ij1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -390,8 +390,8 @@
 				ENABLE_BITCODE = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "movie-publisher-ios/Info.plist";
-				INFOPLIST_KEY_NSCameraUsageDescription = "$(PRODUCT_NAME) uses the camera.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "$(PRODUCT_NAME) uses the microphone.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "movie-publisher-ios uses the camera.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "movie-publisher-ios uses the microphone.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -402,7 +402,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.vonage.movie-publisher-ios-ij";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.vonage.movie-publisher-ios-ij1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

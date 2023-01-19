@@ -105,7 +105,7 @@ extension VideoCapturer {
 
                 if (avAssetReader.startReading()) {
                     var buffer: CMSampleBuffer?
-                    while (capturing && avAssetReader.status == AVAssetReader.Status.reading) {
+                    while avAssetReader.status == AVAssetReader.Status.reading {
                         let startTime = CACurrentMediaTime()
                         buffer = assetReaderVideoOutput.copyNextSampleBuffer()
              
@@ -115,7 +115,7 @@ extension VideoCapturer {
                         let oldTS = lastTimeStamp
                         let currentTS = timingInfo.presentationTimeStamp
 
-                        var audioTime =  Double(audioTimeStamp.value) / Double(audioTimeStamp.timescale)
+                        let audioTime =  Double(audioTimeStamp.value) / Double(audioTimeStamp.timescale)
 
                         let previousTime = Double(oldTS.value) / Double(oldTS.timescale)
                         let currentTime = Double(currentTS.value) / Double(currentTS.timescale)
@@ -123,16 +123,15 @@ extension VideoCapturer {
                         lastTimeStamp = timingInfo.presentationTimeStamp
 
                         sendSampleBuffer(buffer:buffer!, timeStamp: timingInfo.presentationTimeStamp)
-                                                
-                        while (currentTime > audioTime) {
-                            audioTime =  Double(audioTimeStamp.value) / Double(audioTimeStamp.timescale)
-                            if (currentTime == 0) { break; }
-                            if (abs(currentTime - CMTimeGetSeconds(videoInput.duration)) < 1) {break;}
+                        
+                        var audioDelay = 0.0
+                        if (currentTime - audioTime > 0.02) {
+                            audioDelay = currentTime - audioTime
                         }
                         
                         let finishTime = CACurrentMediaTime();
                         let decodeTime = finishTime - startTime;
-                        let sleepTime = currentTime - previousTime - decodeTime
+                        let sleepTime = currentTime - previousTime - decodeTime + audioDelay
 
                         Thread.sleep(forTimeInterval: sleepTime - 0.025)
 
