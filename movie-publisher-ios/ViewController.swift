@@ -36,19 +36,6 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         videoLoaded = loadVideoFromDocumentDirectory(fileName: "vonage_roadshow")
-
-        let settings = OTPublisherSettings()
-        settings.name = videoPublisherName
-        publisher = OTPublisher(delegate: self, settings: settings)
-        publisher?.audioFallbackEnabled = false
-
-        capturer = VideoCapturer(video: videoLoaded!)
-        
-        let customAudioDevice = CustomAudioDevice(video: videoLoaded!, videoCapturer: capturer!)
-        OTAudioDeviceManager.setAudioDevice(customAudioDevice)
-        
-        publisher?.videoCapture = capturer
-        
         doConnect()
     }
     
@@ -66,7 +53,26 @@ class ViewController: UIViewController {
             process(error: error)
         }
 
+        let settings = OTPublisherSettings()
+        settings.name = videoPublisherName
+        
+        publisher = OTPublisher(delegate: self, settings: settings)
+        publisher?.cameraPosition = .back
+        publisher?.audioFallbackEnabled = false
+
+        capturer = VideoCapturer(video: videoLoaded!)
+        
+        let customAudioDevice = CustomAudioDevice(video: videoLoaded!, videoCapturer: capturer!)
+        OTAudioDeviceManager.setAudioDevice(customAudioDevice)
+        
+        publisher?.videoCapture = capturer
+        
         session.publish(publisher!, error: &error)
+        
+        if let pubView = publisher?.view {
+            pubView.frame = CGRect(x: screenWidth - kWidgetWidth, y: screenHeight - kWidgetHeight, width: kWidgetWidth, height: kWidgetHeight)
+            view.addSubview(pubView)
+        }
     }
     fileprivate func doSubscribe(_ stream: OTStream) {
         var error: OTError?
@@ -99,6 +105,34 @@ class ViewController: UIViewController {
        return nil
    }
     
+    fileprivate func cleanupSubscriber() {
+       subscriber?.view?.removeFromSuperview()
+       subscriber = nil
+    }
+    
+    fileprivate func cleanupPublisher() {
+        publisher?.view?.removeFromSuperview()
+        publisher = nil
+    }
+ 
+// For disconnect button
+//    @IBAction func didclick(_ sender: UIButton) {
+//        var error: OTError?
+//        defer {
+//            process(error: error)
+//        }
+//        if (sender.titleLabel!.text == "Disconnect") {
+//            if (publisher != nil) {
+//                session.unpublish(publisher!, error: &error)
+//            }
+//            session.disconnect(&error)
+//            sender.setTitle("Connect", for: .normal)
+//        }
+//        else {
+//            doConnect()
+//            sender.setTitle("Disconnect", for: .normal)
+//        }
+//    }
 }
 
 extension ViewController: OTSessionDelegate {
@@ -109,6 +143,8 @@ extension ViewController: OTSessionDelegate {
     
     func sessionDidDisconnect(_ session: OTSession) {
         print("Session disconnected")
+        cleanupPublisher()
+        cleanupSubscriber()
     }
     
     func session(_ session: OTSession, streamCreated stream: OTStream) {
@@ -118,6 +154,7 @@ extension ViewController: OTSessionDelegate {
     
     func session(_ session: OTSession, streamDestroyed stream: OTStream) {
         print("Session streamDestroyed: \(stream.streamId)")
+        cleanupSubscriber()
     }
     
     func session(_ session: OTSession, didFailWithError error: OTError) {
@@ -128,11 +165,11 @@ extension ViewController: OTSessionDelegate {
 // MARK: - OTPublisher delegate callbacks
 extension ViewController: OTPublisherDelegate {
     func publisher(_ publisher: OTPublisherKit, streamCreated stream: OTStream) {
-        // Subscribe own video for mirroring
-        doSubscribe(stream)
+        print("Published")
     }
     
     func publisher(_ publisher: OTPublisherKit, streamDestroyed stream: OTStream) {
+        cleanupPublisher()
     }
     
     func publisher(_ publisher: OTPublisherKit, didFailWithError error: OTError) {
@@ -143,28 +180,12 @@ extension ViewController: OTPublisherDelegate {
 // MARK: - OTSubscriber delegate callbacks
 extension ViewController: OTSubscriberDelegate {
     func subscriberDidConnect(toStream subscriberKit: OTSubscriberKit) {
-        var width = screenWidth
-        var height = screenHeight
-        var x:CGFloat = 0
-        var y:CGFloat = 0
-        var bringToFront = false
-        if (subscriber?.stream?.name == videoPublisherName) {
-            subscriber?.audioVolume = 0
-            width = kWidgetWidth
-            height = kWidgetHeight
-            x = screenWidth - kWidgetWidth - 12
-            y = screenHeight - kWidgetHeight - 12
-            bringToFront = true
-        }
         if let subsView = subscriber?.view {
-            subsView.frame = CGRect(x: x, y: y, width: width, height: height)
+            subsView.frame = CGRect(x: 0, y: 0, width: screenWidth, height: screenHeight)
             view.addSubview(subsView)
             view.sendSubviewToBack(subsView);
-            if (bringToFront) {
-                view.bringSubviewToFront(subsView)
-            }
-        }
 
+        }
     }
 
     func subscriber(_ subscriber: OTSubscriberKit, didFailWithError error: OTError) {

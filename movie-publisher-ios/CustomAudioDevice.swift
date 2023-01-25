@@ -70,7 +70,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     var streamFormat = AudioStreamBasicDescription()
     
     fileprivate var videoInput: AVAsset
-    var videoPlayer: VideoCapturer?
+    var videoPlayer: VideoCapturer
     var lastTimeStamp: CMTime = CMTime()
     let audioCaptureQueue = DispatchQueue(label: "file-audio-driver")
     
@@ -83,7 +83,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
         videoInput = video
         videoPlayer = videoCapturer
         super.init()
-        videoPlayer?.audioDelegate = self
+        videoPlayer.audioDelegate = self
         audioFormat.sampleRate = CustomAudioDevice.kSampleRate
         audioFormat.numChannels = 1
     }
@@ -124,6 +124,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     }
     
     fileprivate func doRestartAudio(numberOfAttempts: Int) {
+        isResetting = true
         
         if recording {
             let _ = stopCapture()
@@ -321,7 +322,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
                     let currentTime = Double(currentTS.value) / Double(currentTS.timescale)
 
                     lastTimeStamp = timingInfo.presentationTimeStamp
-                    videoPlayer?.setAudioTimeStamp()
+                    videoPlayer.setAudioTimeStamp()
 
                     let bufferLength = CMBlockBufferGetDataLength(blockBufferRef)
                     let data:[Int32] = Array(repeating: 0, count: bufferLength)
@@ -424,10 +425,11 @@ extension CustomAudioDevice: OTAudioDevice {
         
         playing = false
         
-        let result = AudioOutputUnitStop(playoutVoiceUnit!)
-        if result != noErr {
-            print("Error creaing playout unit")
-            return false
+        if (playoutVoiceUnit != nil) {
+            let result = AudioOutputUnitStop(playoutVoiceUnit!)
+            if result != noErr {
+                return false
+            }
         }
         
         if !recording && !isPlayerInterrupted && !isResetting {
@@ -480,10 +482,12 @@ extension CustomAudioDevice: OTAudioDevice {
         
         recording = false
         
-        let result = AudioOutputUnitStop(recordingVoiceUnit!)
-        
-        if result != noErr {
-            return false
+        if (recordingVoiceUnit != nil) {
+            let result = AudioOutputUnitStop(recordingVoiceUnit!)
+            
+            if result != noErr {
+                return false
+            }
         }
         
         freeupAudioBuffers()
