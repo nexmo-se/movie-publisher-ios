@@ -9,7 +9,7 @@ import UIKit
 import OpenTok
 
 // Replace with your OpenTok API key
-let kApiKey = ""
+let kApiKey = 
 // Replace with your generated session ID
 let kSessionId = ""
 // Replace with your generated token
@@ -116,23 +116,23 @@ class ViewController: UIViewController {
     }
  
 // For disconnect button
-//    @IBAction func didclick(_ sender: UIButton) {
-//        var error: OTError?
-//        defer {
-//            process(error: error)
-//        }
-//        if (sender.titleLabel!.text == "Disconnect") {
-//            if (publisher != nil) {
-//                session.unpublish(publisher!, error: &error)
-//            }
-//            session.disconnect(&error)
-//            sender.setTitle("Connect", for: .normal)
-//        }
-//        else {
-//            doConnect()
-//            sender.setTitle("Disconnect", for: .normal)
-//        }
-//    }
+    @IBAction func didClick(_ sender: UIButton) {
+        var error: OTError?
+        defer {
+            process(error: error)
+        }
+        if (sender.titleLabel!.text == "Disconnect") {
+            if (publisher != nil) {
+                session.unpublish(publisher!, error: &error)
+            }
+            session.disconnect(&error)
+            sender.setTitle("Connect", for: .normal)
+        }
+        else {
+            doConnect()
+            sender.setTitle("Disconnect", for: .normal)
+        }
+    }
 }
 
 extension ViewController: OTSessionDelegate {
