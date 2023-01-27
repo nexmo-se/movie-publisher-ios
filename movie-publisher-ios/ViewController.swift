@@ -9,7 +9,7 @@ import UIKit
 import OpenTok
 
 // Replace with your OpenTok API key
-let kApiKey = 
+let kApiKey = ""
 // Replace with your generated session ID
 let kSessionId = ""
 // Replace with your generated token
