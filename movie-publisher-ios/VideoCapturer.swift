@@ -105,7 +105,7 @@ extension VideoCapturer {
 
                 if (avAssetReader.startReading()) {
                     var buffer: CMSampleBuffer?
-                    while avAssetReader.status == AVAssetReader.Status.reading {
+                    while capturing && avAssetReader.status == AVAssetReader.Status.reading {
                         let startTime = CACurrentMediaTime()
                         buffer = assetReaderVideoOutput.copyNextSampleBuffer()
              

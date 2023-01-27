@@ -309,7 +309,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
               assetReader.startReading()
             // var sampleData = NSMutableData()
 
-              while assetReader.status == AVAssetReader.Status.reading {
+              while recording && assetReader.status == AVAssetReader.Status.reading {
                 if let sampleBufferRef = trackOutput.copyNextSampleBuffer() {
                   if let blockBufferRef = CMSampleBufferGetDataBuffer(sampleBufferRef) {
 
@@ -337,7 +337,7 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
 //                  deviceAudioBus!.writeCaptureData(samples, numberOfSamples: UInt32(numberOfSamples))
                     CMSampleBufferInvalidate(sampleBufferRef)
 
-                      while (isFileAudioLocked || fileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer) {}
+                      while (recording && (isFileAudioLocked || fileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer)) {}
 
                       isFileAudioLocked = true
                       fileAudioBuffer = fileAudioBuffer + samples.toArray(to: Int16.self, capacity: numberOfSamples)
@@ -710,7 +710,7 @@ func recordCb(inRefCon:UnsafeMutableRawPointer,
     
     if audioDevice.recording {
         if (audioDevice.fileAudioBuffer.count > 0) {
-            while (audioDevice.isFileAudioLocked) {}
+            while (audioDevice.isFileAudioLocked && audioDevice.recording) {}
             audioDevice.isFileAudioLocked = true
 
             let numberOfFrameToExtract = audioDevice.fileAudioBuffer.count > inNumberFrames ? Int(inNumberFrames) : audioDevice.fileAudioBuffer.count
