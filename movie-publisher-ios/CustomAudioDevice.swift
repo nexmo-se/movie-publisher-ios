@@ -60,6 +60,9 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     fileprivate var fileAudioBuffer = [Int16]()
     fileprivate var isFileAudioLocked = false
     
+    fileprivate var outputFileAudioBuffer = [Int16]()
+    fileprivate var isOutputFileAudioLocked = false
+    
     fileprivate var previousAVAudioSessionCategory: AVAudioSession.Category?
     fileprivate var avAudioSessionMode: AVAudioSession.Mode?
     fileprivate var avAudioSessionPreffSampleRate = Double(0)
@@ -337,12 +340,20 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
 //                  deviceAudioBus!.writeCaptureData(samples, numberOfSamples: UInt32(numberOfSamples))
                     CMSampleBufferInvalidate(sampleBufferRef)
 
+                      let sampleArray = samples.toArray(to: Int16.self, capacity: numberOfSamples)
+
                       while (recording && (isFileAudioLocked || fileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer)) {}
 
                       isFileAudioLocked = true
-                      fileAudioBuffer = fileAudioBuffer + samples.toArray(to: Int16.self, capacity: numberOfSamples)
+                      fileAudioBuffer = fileAudioBuffer + sampleArray
                       isFileAudioLocked = false
-
+                      
+//                      while (recording && (isOutputFileAudioLocked || outputFileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer)) {}
+//
+//                      isOutputFileAudioLocked = true
+//                      outputFileAudioBuffer = outputFileAudioBuffer + sampleArray
+//                      isOutputFileAudioLocked = false
+                      
                       Thread.sleep(forTimeInterval: currentTime - previousTime - 0.005) // read slightly faster
                   }
                 }

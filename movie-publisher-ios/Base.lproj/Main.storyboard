@@ -26,7 +26,7 @@
                                     </backgroundConfiguration>
                                 </buttonConfiguration>
                                 <connections>
-                                    <action selector="didClick:" destination="BYZ-38-t0r" eventType="touchUpInside" id="Gj7-vX-5rj"/>
+                                    <action selector="didClick:" destination="BYZ-38-t0r" eventType="touchUpInside" id="4lv-9Q-BRk"/>
                                 </connections>
                             </button>
                         </subviews>
