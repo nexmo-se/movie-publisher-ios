@@ -22,6 +22,7 @@ let screenSize: CGRect = UIScreen.main.bounds;
 let screenWidth = screenSize.width;
 let screenHeight = screenSize.height;
 let videoPublisherName = "videoPublisher"
+let videoFileName = "vonage_roadshow"
 
 class ViewController: UIViewController {
     lazy var session: OTSession = {
@@ -30,13 +31,10 @@ class ViewController: UIViewController {
 
     var publisher: OTPublisher?
     var subscriber: OTSubscriber?
-    var mySubscriber: OTSubscriber?
     var capturer: VideoCapturer?
-    var videoLoaded: AVAsset?
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        videoLoaded = loadVideoFromDocumentDirectory(fileName: "vonage_roadshow")
         doConnect()
     }
     
@@ -58,31 +56,36 @@ class ViewController: UIViewController {
         settings.name = videoPublisherName
         
         publisher = OTPublisher(delegate: self, settings: settings)
+        publisher?.cameraPosition = .back
         publisher?.audioFallbackEnabled = false
 
-        capturer = VideoCapturer(video: videoLoaded!)
         
-        let customAudioDevice = CustomAudioDevice(video: videoLoaded!, videoCapturer: capturer!)
-        OTAudioDeviceManager.setAudioDevice(customAudioDevice)
-        
-        publisher?.videoCapture = capturer
-        
-        session.publish(publisher!, error: &error)
+        if let path = Bundle.main.path(forResource: videoFileName, ofType: "mp4", inDirectory: "") {
+            let videoUrl = URL.init(fileURLWithPath: path)
+            
+            capturer = VideoCapturer(url: videoUrl)
+            
+            let customAudioDevice = CustomAudioDevice(url: videoUrl, videoCapturer: capturer!)
+            OTAudioDeviceManager.setAudioDevice(customAudioDevice)
+            
+            publisher?.videoCapture = capturer
+            
+            session.publish(publisher!, error: &error)
+            
+            if let pubView = publisher?.view {
+                pubView.frame = CGRect(x: screenWidth - kWidgetWidth, y: screenHeight - kWidgetHeight, width: kWidgetWidth, height: kWidgetHeight)
+                view.addSubview(pubView)
+            }
+        }
     
     }
-    fileprivate func doSubscribe(_ stream: OTStream, isMe: Bool) {
+    fileprivate func doSubscribe(_ stream: OTStream) {
         var error: OTError?
         defer {
             process(error: error)
         }
-        let tempSubscriber = OTSubscriber(stream: stream, delegate: self)
-        if (!isMe) {
-            subscriber = tempSubscriber
-        }
-        else {
-            mySubscriber = tempSubscriber
-        }
-        session.subscribe(tempSubscriber!, error: &error)
+        subscriber = OTSubscriber(stream: stream, delegate: self)
+        session.subscribe(subscriber!, error: &error)
     }
     fileprivate func process(error err: OTError?) {
         if let e = err {
@@ -97,15 +100,6 @@ class ViewController: UIViewController {
             self.present(controller, animated: true, completion: nil)
         }
     }
-    fileprivate func loadVideoFromDocumentDirectory(fileName: String) -> AVAsset? {
-    
-       if let path = Bundle.main.path(forResource:fileName, ofType: "mp4", inDirectory: "") {
-           let fileUrl = URL.init(fileURLWithPath: path)
-           return AVAsset(url: fileUrl)
-       }
-
-       return nil
-   }
     
     fileprivate func cleanupSubscriber() {
        subscriber?.view?.removeFromSuperview()
@@ -137,6 +131,7 @@ class ViewController: UIViewController {
     }
 }
 
+
 extension ViewController: OTSessionDelegate {
     func sessionDidConnect(_ session: OTSession) {
         print("Session connected")
@@ -145,13 +140,12 @@ extension ViewController: OTSessionDelegate {
     
     func sessionDidDisconnect(_ session: OTSession) {
         print("Session disconnected")
-        cleanupPublisher()
         cleanupSubscriber()
     }
     
     func session(_ session: OTSession, streamCreated stream: OTStream) {
         print("Session streamCreated: \(stream.streamId)")
-        doSubscribe(stream, isMe: false)
+        doSubscribe(stream)
     }
     
     func session(_ session: OTSession, streamDestroyed stream: OTStream) {
@@ -168,7 +162,6 @@ extension ViewController: OTSessionDelegate {
 extension ViewController: OTPublisherDelegate {
     func publisher(_ publisher: OTPublisherKit, streamCreated stream: OTStream) {
         print("Published")
-        doSubscribe(stream, isMe: true)
     }
     
     func publisher(_ publisher: OTPublisherKit, streamDestroyed stream: OTStream) {
@@ -183,20 +176,10 @@ extension ViewController: OTPublisherDelegate {
 // MARK: - OTSubscriber delegate callbacks
 extension ViewController: OTSubscriberDelegate {
     func subscriberDidConnect(toStream subscriberKit: OTSubscriberKit) {
-        if (subscriberKit.stream?.name == videoPublisherName) {
-            subscriberKit.audioVolume = 0
-            if let subsView = mySubscriber?.view {
-                subsView.frame = CGRect(x: screenWidth - kWidgetWidth - 12, y: screenHeight - kWidgetHeight - 12, width: kWidgetWidth, height: kWidgetHeight)
-                view.addSubview(subsView)
-                view.bringSubviewToFront(subsView)
-            }
-        }
-        else {
-            if let subsView = subscriber?.view {
-                subsView.frame = CGRect(x: 0, y: 0, width: screenWidth, height: screenHeight)
-                view.addSubview(subsView)
-                view.sendSubviewToBack(subsView);
-            }
+        if let subsView = subscriber?.view {
+            subsView.frame = CGRect(x: 0, y: 0, width: screenWidth, height: screenHeight)
+            view.addSubview(subsView)
+            view.sendSubviewToBack(subsView);
         }
     }
 

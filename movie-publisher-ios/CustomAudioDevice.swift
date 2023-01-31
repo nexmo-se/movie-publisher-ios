@@ -26,9 +26,14 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
     
     var audioFormat = OTAudioFormat()
     let safetyQueue = DispatchQueue(label: "ot-audio-driver")
+    let audioCaptureQueue = DispatchQueue(label: "file-audio-driver")
 
-    var deviceAudioBus: OTAudioBus?
+    /** Local Audio **/
+    var localAudioPlayer: AVAudioPlayer!
+    var isLocalPlayerPlaying = false
     
+    /** OT capture&render **/
+    var deviceAudioBus: OTAudioBus?
     func setAudioBus(_ audioBus: OTAudioBus?) -> Bool {
         deviceAudioBus = audioBus
         audioFormat = OTAudioFormat()
@@ -37,58 +42,63 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
         return true
     }
     
-    var bufferList: UnsafeMutablePointer<AudioBufferList>?
-    var bufferSize: UInt32 = 0
-    var bufferNumFrames: UInt32 = 0
-    var playoutAudioUnitPropertyLatency: Float64 = 0
-    var playoutDelayMeasurementCounter: UInt32 = 0
+    /** Audio Capture **/
+    var recording = false
+    var recordingInitialized = false
     var recordingDelayMeasurementCounter: UInt32 = 0
     var recordingDelay: UInt32 = 0
     var recordingAudioUnitPropertyLatency: Float64 = 0
-    var playoutDelay: UInt32 = 0
+    var isRecorderInterrupted = false
+    var bufferList: UnsafeMutablePointer<AudioBufferList>?
+    var bufferSize: UInt32 = 0
+    var bufferNumFrames: UInt32 = 0
+    fileprivate var recordingVoiceUnit: AudioUnit?
+
+    /** Audio render  **/
     var playing = false
     var playoutInitialized = false
-    var recording = false
-    var recordingInitialized = false
+    var playoutDelay: UInt32 = 0
+    var playoutAudioUnitPropertyLatency: Float64 = 0
+    var playoutDelayMeasurementCounter: UInt32 = 0
     var interruptedPlayback = false
-    var isRecorderInterrupted = false
     var isPlayerInterrupted = false
+    fileprivate var playoutVoiceUnit: AudioUnit?
+
+    /** Video File **/
+    var videoPlayer: VideoCapturer
+    var lastTimeStamp: CMTime = CMTime()
+    fileprivate var videoInput: AVAsset
+    fileprivate var isFileAudioLocked = false
+    fileprivate var fileAudioBuffer = [Int16]()
+    
+    /** Audio Session  **/
     var isResetting = false
     var restartRetryCount = 0
-    fileprivate var recordingVoiceUnit: AudioUnit?
-    fileprivate var playoutVoiceUnit: AudioUnit?
-    fileprivate var fileAudioBuffer = [Int16]()
-    fileprivate var isFileAudioLocked = false
-    
-    fileprivate var outputFileAudioBuffer = [Int16]()
-    fileprivate var isOutputFileAudioLocked = false
-    
+    var areListenerBlocksSetup = false
+    var streamFormat = AudioStreamBasicDescription()
     fileprivate var previousAVAudioSessionCategory: AVAudioSession.Category?
     fileprivate var avAudioSessionMode: AVAudioSession.Mode?
     fileprivate var avAudioSessionPreffSampleRate = Double(0)
     fileprivate var avAudioSessionChannels = 0
     fileprivate var isAudioSessionSetup = false
-    
-    var areListenerBlocksSetup = false
-    var streamFormat = AudioStreamBasicDescription()
-    
-    fileprivate var videoInput: AVAsset
-    var videoPlayer: VideoCapturer
-    var lastTimeStamp: CMTime = CMTime()
-    let audioCaptureQueue = DispatchQueue(label: "file-audio-driver")
-    
+
     deinit {
         tearDownAudio()
         removeObservers()
     }
     
-    init(video: AVAsset, videoCapturer: VideoCapturer) {
-        videoInput = video
+    init(url: URL, videoCapturer: VideoCapturer) {
+        videoInput = AVAsset(url: url)
         videoPlayer = videoCapturer
         super.init()
         videoPlayer.audioDelegate = self
+        
         audioFormat.sampleRate = CustomAudioDevice.kSampleRate
         audioFormat.numChannels = 1
+        
+        localAudioPlayer = try! AVAudioPlayer(contentsOf: url)
+        localAudioPlayer.volume = 10
+        localAudioPlayer.numberOfLoops = -1
     }
     
     func valueChanged() -> CMTime {
@@ -311,7 +321,6 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
               assetReader.add(trackOutput)
               assetReader.startReading()
             // var sampleData = NSMutableData()
-
               while recording && assetReader.status == AVAssetReader.Status.reading {
                 if let sampleBufferRef = trackOutput.copyNextSampleBuffer() {
                   if let blockBufferRef = CMSampleBufferGetDataBuffer(sampleBufferRef) {
@@ -337,22 +346,13 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
 
                     let numberOfSamples = CMSampleBufferGetNumSamples(sampleBufferRef)
 
-//                  deviceAudioBus!.writeCaptureData(samples, numberOfSamples: UInt32(numberOfSamples))
                     CMSampleBufferInvalidate(sampleBufferRef)
-
-                      let sampleArray = samples.toArray(to: Int16.self, capacity: numberOfSamples)
 
                       while (recording && (isFileAudioLocked || fileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer)) {}
 
                       isFileAudioLocked = true
-                      fileAudioBuffer = fileAudioBuffer + sampleArray
+                      fileAudioBuffer = fileAudioBuffer + samples.toArray(to: Int16.self, capacity: numberOfSamples)
                       isFileAudioLocked = false
-                      
-//                      while (recording && (isOutputFileAudioLocked || outputFileAudioBuffer.count > CustomAudioDevice.kMaxSampleBuffer)) {}
-//
-//                      isOutputFileAudioLocked = true
-//                      outputFileAudioBuffer = outputFileAudioBuffer + sampleArray
-//                      isOutputFileAudioLocked = false
                       
                       Thread.sleep(forTimeInterval: currentTime - previousTime - 0.005) // read slightly faster
                   }
@@ -361,6 +361,18 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
           }catch{
               fatalError("Unable to read Asset: \(error) : \(#function).")
           }
+    }
+    func playLocalAudio() {
+        if (!isLocalPlayerPlaying) {
+            isLocalPlayerPlaying = true
+            localAudioPlayer.play()
+        }
+    }
+    func stopLocalAudio() {
+        if (isLocalPlayerPlaying) {
+            isLocalPlayerPlaying = false
+            localAudioPlayer.stop()
+        }
     }
 }
 
@@ -483,6 +495,8 @@ extension CustomAudioDevice: OTAudioDevice {
             recording = false
         }
         
+        playLocalAudio()
+        
         return recording
     }
     
@@ -500,7 +514,8 @@ extension CustomAudioDevice: OTAudioDevice {
                 return false
             }
         }
-        
+        stopLocalAudio()
+
         freeupAudioBuffers()
         
         if !recording && !isRecorderInterrupted && !isResetting {

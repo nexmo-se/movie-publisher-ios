@@ -34,8 +34,8 @@ class VideoCapturer: NSObject, OTVideoCapture {
     var audioTimeStamp: CMTime = CMTime()
 
     
-    init(video: AVAsset) {
-        videoInput = video
+    init(url: URL) {
+        videoInput = AVAsset(url: url)
     }
 
     func initCapture() {
@@ -70,7 +70,6 @@ class VideoCapturer: NSObject, OTVideoCapture {
     
     func setAudioTimeStamp() {
         audioTimeStamp = (self.audioDelegate?.valueChanged())!
-
     }
 }
 
