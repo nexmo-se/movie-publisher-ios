@@ -97,7 +97,6 @@ class CustomAudioDevice: NSObject, AudioTimeStampDelegate {
         audioFormat.numChannels = 1
         
         localAudioPlayer = try! AVAudioPlayer(contentsOf: url)
-        localAudioPlayer.volume = 10
         localAudioPlayer.numberOfLoops = -1
     }
     
@@ -482,6 +481,9 @@ extension CustomAudioDevice: OTAudioDevice {
                 self.playAudio()
             }
         }
+        setupAudioSession()
+        playLocalAudio()
+
         if recordingVoiceUnit == nil {
             recording = setupAudioUnit(withPlayout: false)
 
@@ -495,7 +497,6 @@ extension CustomAudioDevice: OTAudioDevice {
             recording = false
         }
         
-        playLocalAudio()
         
         return recording
     }

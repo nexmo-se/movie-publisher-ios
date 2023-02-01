@@ -165,6 +165,7 @@ extension ViewController: OTPublisherDelegate {
     }
     
     func publisher(_ publisher: OTPublisherKit, streamDestroyed stream: OTStream) {
+        print("publisher stream destroyed")
         cleanupPublisher()
     }
     
