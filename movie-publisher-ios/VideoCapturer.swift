@@ -8,9 +8,6 @@
 import OpenTok
 import AVFoundation
 
-//protocol FrameCapturerMetadataDelegate {
-//    func finishPreparingFrame(_ videoFrame: OTVideoFrame?)
-//}
 protocol AudioTimeStampDelegate {
     func valueChanged() -> CMTime
 }
@@ -104,7 +101,7 @@ extension VideoCapturer {
 
                 if (avAssetReader.startReading()) {
                     var buffer: CMSampleBuffer?
-                    while capturing && avAssetReader.status == AVAssetReader.Status.reading {
+                    while avAssetReader.status == AVAssetReader.Status.reading {
                         let startTime = CACurrentMediaTime()
                         buffer = assetReaderVideoOutput.copyNextSampleBuffer()
              
@@ -121,10 +118,12 @@ extension VideoCapturer {
 
                         lastTimeStamp = timingInfo.presentationTimeStamp
 
-                        sendSampleBuffer(buffer:buffer!, timeStamp: timingInfo.presentationTimeStamp)
+                        if (capturing) {
+                            sendSampleBuffer(buffer:buffer!, timeStamp: timingInfo.presentationTimeStamp)
+                        }
                         
                         var audioDelay = 0.0
-                        if (currentTime - audioTime > 0.02) {
+                        if (currentTime - audioTime > 0.01) {
                             audioDelay = currentTime - audioTime
                         }
                         
